@@ -105,12 +105,34 @@
                 return 'reprovado';
             }
 
+            if (solicitacao && solicitacao.status === 'aprovada') {
+                const aindaTemAcesso = 
+                    DADOS.acessos.desenvolvedor.includes(nick) ||
+                    DADOS.acessos.presidencia.includes(nick) ||
+                    DADOS.acessos.diretoria.includes(nick) ||
+                    DADOS.acessos.intermediaria.includes(nick);
+                    
+                if (!aindaTemAcesso) {
+                    const index = DADOS.solicitacoes.findIndex(s => s.nick.toLowerCase() === nick);
+                    if (index > -1) {
+                        DADOS.solicitacoes.splice(index, 1);
+                    }
+                    return 'sem_acesso';
+                }
+            }
+
             return 'sem_acesso';
         }
 
         function temAcesso() {
             const cargo = verificarAcesso();
-            return cargo !== 'sem_acesso' && cargo !== 'reprovado';
+            const temAcessoReal = 
+                DADOS.acessos.desenvolvedor.includes(USUARIO_ATUAL.toLowerCase()) ||
+                DADOS.acessos.presidencia.includes(USUARIO_ATUAL.toLowerCase()) ||
+                DADOS.acessos.diretoria.includes(USUARIO_ATUAL.toLowerCase()) ||
+                DADOS.acessos.intermediaria.includes(USUARIO_ATUAL.toLowerCase());
+            
+            return cargo !== 'sem_acesso' && cargo !== 'reprovado' && temAcessoReal;
         }
 
         function atualizarInterfaceAcesso() {
@@ -156,18 +178,38 @@
                         authBtn.textContent = 'SOLICITAÇÃO PENDENTE';
                     }
                 } else if (solicitacao && solicitacao.status === 'aprovada') {
-                    messageEl.textContent = 'Solicitação aprovada! Redirecionando...';
-                    messageEl.classList.add('success');
-                    messageEl.style.display = 'block';
-                    if (authBtn) {
-                        authBtn.disabled = true;
-                        authBtn.textContent = 'ACESSO APROVADO';
+                    const aindaTemAcesso = 
+                        DADOS.acessos.desenvolvedor.includes(USUARIO_ATUAL.toLowerCase()) ||
+                        DADOS.acessos.presidencia.includes(USUARIO_ATUAL.toLowerCase()) ||
+                        DADOS.acessos.diretoria.includes(USUARIO_ATUAL.toLowerCase()) ||
+                        DADOS.acessos.intermediaria.includes(USUARIO_ATUAL.toLowerCase());
+                    
+                    if (!aindaTemAcesso) {
+                        messageEl.textContent = 'Você foi removido dos acessos. Solicite o acesso novamente.';
+                        messageEl.classList.add('error');
+                        messageEl.style.display = 'block';
+                        if (authBtn) {
+                            authBtn.disabled = false;
+                            authBtn.textContent = 'SOLICITAR NOVAMENTE';
+                        }
+                        const index = DADOS.solicitacoes.findIndex(s => s.nick.toLowerCase() === USUARIO_ATUAL.toLowerCase());
+                        if (index > -1) {
+                            DADOS.solicitacoes.splice(index, 1);
+                        }
+                    } else {
+                        messageEl.textContent = 'Solicitação aprovada! Redirecionando...';
+                        messageEl.classList.add('success');
+                        messageEl.style.display = 'block';
+                        if (authBtn) {
+                            authBtn.disabled = true;
+                            authBtn.textContent = 'ACESSO APROVADO';
+                        }
+                        setTimeout(() => {
+                            carregarDados().then(() => {
+                                atualizarInterfaceAcesso();
+                            });
+                        }, 1500);
                     }
-                    setTimeout(() => {
-                        carregarDados().then(() => {
-                            atualizarInterfaceAcesso();
-                        });
-                    }, 1500);
                 } else {
                     messageEl.style.display = 'none';
                     if (authBtn) {
@@ -352,6 +394,11 @@
                         DADOS.acessos.desenvolvedor.splice(index, 1);
                         mudou = true;
                     }
+                }
+                
+                const solicitacaoIndex = DADOS.solicitacoes.findIndex(s => s.nick.toLowerCase() === nickLower && s.status === 'aprovada');
+                if (solicitacaoIndex > -1) {
+                    DADOS.solicitacoes.splice(solicitacaoIndex, 1);
                 }
             }
 
