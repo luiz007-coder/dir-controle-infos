@@ -607,13 +607,55 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
     
     DADOS.estatisticas.total_relatorios = DADOS.relatorios.length;
     
-    const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
-    if (!jaAcompanhado) {
-        DADOS.acompanhamentos.push({
-            executivo: alvo,
-            responsavel: autor,
-            status: "ativo"
+    const usuarioExistente = DADOS.usuarios.find(u => u.nick.toLowerCase() === alvo.toLowerCase());
+    
+    if (!usuarioExistente) {
+        DADOS.usuarios.push({
+            nick: alvo,
+            status: "Acompanhado/Auxiliado",
+            data_registro: new Date().toISOString().split('T')[0],
+            registrado_por: autor
         });
+        
+        DADOS.log_acoes.push({
+            tipo: "registro_executivo",
+            nick: alvo,
+            responsavel: autor,
+            data: new Date().toISOString().replace('T', ' ').slice(0, 19)
+        });
+        
+        DADOS.estatisticas.total_usuarios = DADOS.usuarios.length;
+        DADOS.estatisticas.usuarios_hoje += 1;
+        
+        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
+        if (!jaAcompanhado) {
+            DADOS.acompanhamentos.push({
+                executivo: alvo,
+                responsavel: autor,
+                status: "ativo"
+            });
+        }
+    } else {
+        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
+        
+        if (!jaAcompanhado) {
+            DADOS.acompanhamentos.push({
+                executivo: alvo,
+                responsavel: autor,
+                status: "ativo"
+            });
+            
+            usuarioExistente.status = "Acompanhado/Auxiliado";
+            
+            DADOS.log_acoes.push({
+                tipo: "atualizacao_status",
+                nick: alvo,
+                status_anterior: "Livre",
+                status_novo: "Acompanhado/Auxiliado",
+                responsavel: autor,
+                data: new Date().toISOString().replace('T', ' ').slice(0, 19)
+            });
+        }
     }
     
     const sucesso = await salvarDados();
@@ -632,6 +674,7 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
     }
     const statusAnterior = usuario.status;
     usuario.status = novoStatus;
+    
     DADOS.log_acoes.push({
         tipo: "atualizacao_status",
         nick: nick,
@@ -640,9 +683,20 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         responsavel: autor,
         data: new Date().toISOString().replace('T', ' ').slice(0, 19)
     });
-    if (novoStatus === "Não tem interesse") {
+    
+    if (novoStatus === "Não tem interesse" || novoStatus === "Livre") {
         DADOS.acompanhamentos = DADOS.acompanhamentos.filter(a => a.executivo.toLowerCase() !== nick.toLowerCase());
+    } else if (novoStatus === "Acompanhado/Auxiliado") {
+        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === nick.toLowerCase());
+        if (!jaAcompanhado) {
+            DADOS.acompanhamentos.push({
+                executivo: nick,
+                responsavel: autor,
+                status: "ativo"
+            });
+        }
     }
+    
     const sucesso = await salvarDados();
     if (sucesso) {
         showToast(`Status de ${nick} atualizado para: ${novoStatus}`);
