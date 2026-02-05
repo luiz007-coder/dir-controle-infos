@@ -1046,7 +1046,7 @@
                                 ${(verificarAcesso() === 'desenvolvedor' || verificarAcesso() === 'presidencia' || (verificarAcesso() === 'diretoria' && !u.cargos.includes('DEV') && !u.cargos.includes('Pres.DIR') && !u.cargos.includes('DIR'))) ? `
                                 <div style="display: flex; gap: 4px;">
                                     ${u.cargosArray.map(cargo => `
-                                        <button onclick="removerUsuario('${u.nick}', '${cargo}')" style="background: #ff4757; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; margin: 2px;">x ${cargo === 'desenvolvedor' ? 'DEV' : cargo === 'presidencia' ? 'Pres.DIR' : cargo === 'diretoria' ? 'DIR' : 'EI'}</button>
+                                        <button onclick="removerUsuario('${u.nick}', '${cargo}')" style="background: #ff4757; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; margin: 2px;">X ${cargo === 'desenvolvedor' ? 'DEV' : cargo === 'presidencia' ? 'Pres.DIR' : cargo === 'diretoria' ? 'DIR' : 'EI'}</button>
                                     `).join('')}
                                 </div>
                                 ` : ''}
