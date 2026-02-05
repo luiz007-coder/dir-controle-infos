@@ -390,13 +390,15 @@ async function gerenciarCargo(nick, cargo, acao) {
         if (sucesso) {
             showToast(`Cargo ${cargo} ${acao === 'adicionar' ? 'adicionado' : 'removido'} para ${nick}`);
 
-            renderAdminPanel();
-            
-            if (nick.toLowerCase() === USUARIO_ATUAL.toLowerCase()) {
+            setTimeout(() => {
                 atualizarInterfaceAcesso();
+            }, 100);
+
+            if (nick.toLowerCase() === USUARIO_ATUAL.toLowerCase()) {
                 atualizarPerfilInterface();
             }
             
+            renderAdminPanel();
             return true;
         }
     }
@@ -795,16 +797,16 @@ function renderRegistered() {
         let statusClass = '';
         
         if (u.status === 'Livre') {
-            statusIcon = 'ph ph-coffee';
-            statusText = 'Livre';
+            statusIcon = 'ph-coffee';
+            statusText = '';
             statusClass = 'status-livre';
         } else if (u.status === 'Acompanhado/Auxiliado') {
-            statusIcon = 'ph ph-user-focus';
-            statusText = 'Acompanhado/Auxiliado';
+            statusIcon = 'ph-user-focus';
+            statusText = '';
             statusClass = 'status-acompanhado';
         } else if (u.status === 'Não tem interesse') {
-            statusIcon = 'ph ph-x';
-            statusText = 'Não tem interesse';
+            statusIcon = 'ph-x';
+            statusText = '';
             statusClass = 'status-nao-tem-interesse';
         }
 
@@ -817,10 +819,10 @@ function renderRegistered() {
                     </div>
                 </td>
                 <td>
-                    <span class="${statusClass}">
-                        <i class="${statusIcon}"></i>
-                        ${statusText}
-                    </span>
+                    <div class="status-cell ${statusClass}">
+                        <i class="ph ${statusIcon}"></i>
+                        <span>${statusText}</span>
+                    </div>
                 </td>
                 <td>
                     ${u.responsavel ? `
