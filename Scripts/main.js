@@ -798,15 +798,15 @@ function renderRegistered() {
         
         if (u.status === 'Livre') {
             statusIcon = 'ph-coffee';
-            statusText = 'Livre';
+            statusText = '';
             statusClass = 'status-livre';
         } else if (u.status === 'Acompanhado/Auxiliado') {
             statusIcon = 'ph-user-focus';
-            statusText = 'Acompanhado/Auxiliado';
+            statusText = '';
             statusClass = 'status-acompanhado';
         } else if (u.status === 'Não tem interesse') {
             statusIcon = 'ph-x';
-            statusText = 'Não tem interesse';
+            statusText = '';
             statusClass = 'status-nao-tem-interesse';
         }
 
