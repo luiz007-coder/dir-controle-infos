@@ -1717,8 +1717,8 @@ function openModal(type) {
                 item.className = 'autocomplete-item';
                 
                 const responsavelText = user.responsavel 
-                    ? ` (Responsável: ${user.responsavel})`
-                    : ' (Sem responsável)';
+                    ? ` (Resp: ${user.responsavel})`
+                    : ' (-x-)';
                 
                 item.innerHTML = `${user.nick}<span style="color:#888; font-size:10px;">${responsavelText}</span>`;
                 
@@ -1731,7 +1731,7 @@ function openModal(type) {
                             <img src="${avatarHeadUrl(user.responsavel)}" style="width:20px;height:20px;" />
                             <span>${user.responsavel}</span>
                         </div>`
-                        : '<span style="color:#888; font-style:italic;">Sem responsável</span>';
+                        : '<span style="color:#888; font-style:italic;">-x-</span>';
                 };
                 autocompleteExecutivo.appendChild(item);
             });
