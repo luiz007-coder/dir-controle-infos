@@ -614,7 +614,8 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
             nick: alvo,
             status: "Acompanhado/Auxiliado",
             data_registro: new Date().toISOString().split('T')[0],
-            registrado_por: autor
+            registrado_por: autor,
+            responsavel: autor
         });
         
         DADOS.log_acoes.push({
@@ -639,9 +640,13 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
         const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
         
         if (!jaAcompanhado) {
+            if (!usuarioExistente.responsavel) {
+                usuarioExistente.responsavel = autor;
+            }
+            
             DADOS.acompanhamentos.push({
                 executivo: alvo,
-                responsavel: autor,
+                responsavel: usuarioExistente.responsavel || autor,
                 status: "ativo"
             });
             
@@ -672,6 +677,12 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         showToast(`Executivo ${nick} não encontrado!`, 'error');
         return false;
     }
+
+    if (!podeAlterarStatusExecutivo(nick)) {
+        showToast(`Você não tem permissão para alterar o status de ${nick}. Apenas ${usuario.responsavel || 'o responsável'} pode fazer isso.`, 'error');
+        return false;
+    }
+    
     const statusAnterior = usuario.status;
     usuario.status = novoStatus;
     
@@ -686,12 +697,19 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
     
     if (novoStatus === "Não tem interesse" || novoStatus === "Livre") {
         DADOS.acompanhamentos = DADOS.acompanhamentos.filter(a => a.executivo.toLowerCase() !== nick.toLowerCase());
+        if (novoStatus === "Livre") {
+            usuario.responsavel = null;
+        }
     } else if (novoStatus === "Acompanhado/Auxiliado") {
         const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === nick.toLowerCase());
         if (!jaAcompanhado) {
+            if (!usuario.responsavel) {
+                usuario.responsavel = autor;
+            }
+            
             DADOS.acompanhamentos.push({
                 executivo: nick,
-                responsavel: autor,
+                responsavel: usuario.responsavel,
                 status: "ativo"
             });
         }
@@ -703,6 +721,59 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         return true;
     }
     return false;
+}
+
+async function transferirResponsabilidade(nick, novoResponsavel, autor) {
+    const cargoAtual = verificarAcesso();
+    const isDiretoriaPlus = cargoAtual === 'desenvolvedor' || cargoAtual === 'presidencia' || cargoAtual === 'diretoria';
+    
+    if (!isDiretoriaPlus) {
+        showToast('Apenas diretores+ podem transferir responsabilidade!', 'error');
+        return false;
+    }
+    
+    const usuario = DADOS.usuarios.find(u => u.nick.toLowerCase() === nick.toLowerCase());
+    if (!usuario) {
+        showToast(`Executivo ${nick} não encontrado!`, 'error');
+        return false;
+    }
+    
+    const responsavelAnterior = usuario.responsavel || 'Ninguém';
+    usuario.responsavel = novoResponsavel;
+
+    const acompanhamentoIndex = DADOS.acompanhamentos.findIndex(a => a.executivo.toLowerCase() === nick.toLowerCase());
+    if (acompanhamentoIndex !== -1) {
+        DADOS.acompanhamentos[acompanhamentoIndex].responsavel = novoResponsavel;
+    }
+    
+    DADOS.log_acoes.push({
+        tipo: "transferencia_responsabilidade",
+        nick: nick,
+        responsavel_anterior: responsavelAnterior,
+        responsavel_novo: novoResponsavel,
+        responsavel: autor,
+        data: new Date().toISOString().replace('T', ' ').slice(0, 19)
+    });
+    
+    const sucesso = await salvarDados();
+    if (sucesso) {
+        showToast(`Responsabilidade de ${nick} transferida de ${responsavelAnterior} para ${novoResponsavel}`);
+        return true;
+    }
+    return false;
+}
+
+function podeAlterarStatusExecutivo(nick) {
+    const usuario = DADOS.usuarios.find(u => u.nick.toLowerCase() === nick.toLowerCase());
+    if (!usuario) return true;
+    
+    const cargoAtual = verificarAcesso();
+    const isDiretoriaPlus = cargoAtual === 'desenvolvedor' || cargoAtual === 'presidencia' || cargoAtual === 'diretoria';
+
+    if (isDiretoriaPlus) return true;
+
+    const responsavel = usuario.responsavel;
+    return responsavel && responsavel.toLowerCase() === USUARIO_ATUAL.toLowerCase();
 }
 
 function atualizarTodasInterfaces() {
@@ -750,6 +821,14 @@ function renderRegistered() {
                     </div>
                 </td>
                 <td><span class="${statusClass}">${u.status}</span></td>
+                <td>
+                    ${u.responsavel ? `
+                        <div class="habbo-cell">
+                            <img src="${avatarHeadUrl(u.responsavel)}" />
+                            <span>${u.responsavel}</span>
+                        </div>
+                    ` : '<span style="color:#888; font-style:italic;">Sem responsável</span>'}
+                </td>
             </tr>
         `}).join('');
 }
@@ -805,6 +884,8 @@ function formatarLogAcao(log) {
             return `${log.responsavel} alterou status de ${log.nick}`;
         case 'novo_relatorio':
             return `${log.autor} postou relatório sobre ${log.alvo}`;
+        case 'transferencia_responsabilidade':
+            return `${log.responsavel} transferiu ${log.nick} de ${log.responsavel_anterior} para ${log.responsavel_novo}`;
         default:
             return `Ação: ${log.tipo}`;
     }
@@ -1398,14 +1479,20 @@ function openModal(type) {
                     <option value="Não tem interesse">Não tem interesse</option>
                 </select>
             </div>
+            <div id="responsavel-info" class="form-row hidden" style="background: rgba(255,193,7,0.1); border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 11px;">
+                <i class="ph ph-warning" style="color: #ffc107; margin-right: 6px;"></i>
+                <span>Responsável: <span id="responsavel-nome">N/A</span>. Apenas o responsável pode alterar o status.</span>
+            </div>
         `;
 
         const nickInput = document.getElementById('upd-nick');
         const autocompleteList = document.getElementById('autocomplete-list-upd');
+        const responsavelInfo = document.getElementById('responsavel-info');
 
         nickInput.addEventListener('input', function () {
             const query = this.value.toLowerCase();
             autocompleteList.innerHTML = '';
+            responsavelInfo.classList.add('hidden');
 
             if (query.length < 1) {
                 autocompleteList.style.display = 'none';
@@ -1424,10 +1511,31 @@ function openModal(type) {
             filtered.forEach(user => {
                 const item = document.createElement('div');
                 item.className = 'autocomplete-item';
-                item.textContent = user.nick;
+                
+                const responsavelText = user.responsavel 
+                    ? `<span style="color:#888; font-size:10px;"> (Responsável: ${user.responsavel})</span>` 
+                    : '';
+                
+                item.innerHTML = `${user.nick}${responsavelText}`;
+                
                 item.onclick = () => {
                     nickInput.value = user.nick;
                     autocompleteList.style.display = 'none';
+
+                    if (user.responsavel) {
+                        document.getElementById('responsavel-nome').textContent = user.responsavel;
+                        responsavelInfo.classList.remove('hidden');
+
+                        const podeAlterar = podeAlterarStatusExecutivo(user.nick);
+                        if (!podeAlterar) {
+                            responsavelInfo.innerHTML = `
+                                <i class="ph ph-warning" style="color: #ff4757; margin-right: 6px;"></i>
+                                <span>Responsável: ${user.responsavel}. <strong style="color:#ff4757">Apenas ${user.responsavel} pode alterar o status.</strong></span>
+                            `;
+                        }
+                    } else {
+                        responsavelInfo.classList.add('hidden');
+                    }
                 };
                 autocompleteList.appendChild(item);
             });
@@ -1453,6 +1561,7 @@ function openModal(type) {
             await atualizarStatusExecutivo(nick, status, USUARIO_ATUAL);
             closeModal();
         };
+
     } else if (type === 'manage-roles') {
         const cargo = verificarAcesso();
         if (cargo !== 'desenvolvedor' && cargo !== 'presidencia') {
@@ -1547,7 +1656,156 @@ function openModal(type) {
             await gerenciarCargo(nick, cargo, acao);
             closeModal();
         };
+    } else if (type === 'transferir-responsabilidade') {
+        const cargo = verificarAcesso();
+        if (cargo !== 'desenvolvedor' && cargo !== 'presidencia' && cargo !== 'diretoria') {
+            showToast('Apenas diretores+ podem transferir responsabilidade!', 'error');
+            return;
+        }
+
+        titleEl.textContent = 'TRANSFERIR RESPONSABILIDADE';
+        bodyEl.innerHTML = `
+            <div class="form-row">
+                <div class="form-label">EXECUTIVO</div>
+                <div class="autocomplete-container">
+                    <input id="transfer-executivo" class="form-input" placeholder="Digite o nickname do executivo..." autocomplete="off">
+                    <div id="autocomplete-list-executivo" class="autocomplete-list"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">RESPONSÁVEL ATUAL</div>
+                <div id="responsavel-atual" style="padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 12px; color: #ccc;">
+                    Selecione um executivo primeiro
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-label">NOVO RESPONSÁVEL</div>
+                <div class="autocomplete-container">
+                    <input id="transfer-novo" class="form-input" placeholder="Digite o nickname do novo responsável..." autocomplete="off">
+                    <div id="autocomplete-list-novo" class="autocomplete-list"></div>
+                </div>
+            </div>
+        `;
+
+        const executivoInput = document.getElementById('transfer-executivo');
+        const autocompleteExecutivo = document.getElementById('autocomplete-list-executivo');
+        const responsavelAtualEl = document.getElementById('responsavel-atual');
+        const novoInput = document.getElementById('transfer-novo');
+        const autocompleteNovo = document.getElementById('autocomplete-list-novo');
+
+        executivoInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            autocompleteExecutivo.innerHTML = '';
+
+            if (query.length < 1) {
+                autocompleteExecutivo.style.display = 'none';
+                responsavelAtualEl.innerHTML = 'Selecione um executivo primeiro';
+                return;
+            }
+
+            const filtered = DADOS.usuarios.filter(user =>
+                user.nick.toLowerCase().includes(query) && user.status === "Acompanhado/Auxiliado"
+            ).slice(0, 8);
+
+            if (filtered.length === 0) {
+                autocompleteExecutivo.style.display = 'none';
+                return;
+            }
+
+            filtered.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                
+                const responsavelText = user.responsavel 
+                    ? ` (Responsável: ${user.responsavel})`
+                    : ' (Sem responsável)';
+                
+                item.innerHTML = `${user.nick}<span style="color:#888; font-size:10px;">${responsavelText}</span>`;
+                
+                item.onclick = () => {
+                    executivoInput.value = user.nick;
+                    autocompleteExecutivo.style.display = 'none';
+
+                    responsavelAtualEl.innerHTML = user.responsavel 
+                        ? `<div class="habbo-cell">
+                            <img src="${avatarHeadUrl(user.responsavel)}" style="width:20px;height:20px;" />
+                            <span>${user.responsavel}</span>
+                        </div>`
+                        : '<span style="color:#888; font-style:italic;">Sem responsável</span>';
+                };
+                autocompleteExecutivo.appendChild(item);
+            });
+
+            autocompleteExecutivo.style.display = 'block';
+        });
+
+        novoInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            autocompleteNovo.innerHTML = '';
+
+            if (query.length < 1) {
+                autocompleteNovo.style.display = 'none';
+                return;
+            }
+
+            const todosUsuariosAprovados = [
+                ...DADOS.acessos.desenvolvedor,
+                ...DADOS.acessos.presidencia,
+                ...DADOS.acessos.diretoria,
+                ...DADOS.acessos.intermediaria
+            ];
+
+            const filtered = todosUsuariosAprovados.filter(nick =>
+                nick.toLowerCase().includes(query)
+            ).slice(0, 8);
+
+            if (filtered.length === 0) {
+                autocompleteNovo.style.display = 'none';
+                return;
+            }
+
+            filtered.forEach(nick => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = nick;
+                item.onclick = () => {
+                    novoInput.value = nick;
+                    autocompleteNovo.style.display = 'none';
+                };
+                autocompleteNovo.appendChild(item);
+            });
+
+            autocompleteNovo.style.display = 'block';
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!executivoInput.contains(e.target) && !autocompleteExecutivo.contains(e.target)) {
+                autocompleteExecutivo.style.display = 'none';
+            }
+            if (!novoInput.contains(e.target) && !autocompleteNovo.contains(e.target)) {
+                autocompleteNovo.style.display = 'none';
+            }
+        });
+
+        submitEl.onclick = async () => {
+            const executivo = executivoInput.value.trim();
+            const novoResponsavel = novoInput.value.trim();
+
+            if (!executivo) {
+                showToast('Por favor, selecione um executivo!', 'warning');
+                return;
+            }
+
+            if (!novoResponsavel) {
+                showToast('Por favor, selecione um novo responsável!', 'warning');
+                return;
+            }
+
+            await transferirResponsabilidade(executivo, novoResponsavel, USUARIO_ATUAL);
+            closeModal();
+        };
     }
+
     overlay.style.display = 'flex';
     document.getElementById('modal-cancel').onclick = closeModal;
 }
@@ -1736,6 +1994,21 @@ async function init() {
             headerCard.addEventListener('click', () => {
                 openProfile(USUARIO_ATUAL);
             });
+        }
+
+        const cargoAtual = verificarAcesso();
+        const isDiretoriaPlus = cargoAtual === 'desenvolvedor' || cargoAtual === 'presidencia' || cargoAtual === 'diretoria';
+        
+        if (isDiretoriaPlus) {
+            const actionsContainer = document.querySelector('.actions-container');
+            if (actionsContainer) {
+                const transferBtn = document.createElement('button');
+                transferBtn.id = 'btn-transferir-responsabilidade';
+                transferBtn.className = 'btn btn-primary';
+                transferBtn.innerHTML = '<i class="ph ph-arrows-left-right"></i> Transferir responsabilidade';
+                transferBtn.addEventListener('click', () => openModal('transferir-responsabilidade'));
+                actionsContainer.appendChild(transferBtn);
+            }
         }
 
         const drawer = document.getElementById('side-drawer');
