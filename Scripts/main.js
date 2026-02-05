@@ -797,16 +797,16 @@ function renderRegistered() {
         let statusClass = '';
         
         if (u.status === 'Livre') {
-            statusIcon = 'ph-coffee';
-            statusText = '';
+            statusIcon = 'ph ph-coffee';
+            statusText = 'Livre';
             statusClass = 'status-livre';
         } else if (u.status === 'Acompanhado/Auxiliado') {
-            statusIcon = 'ph-user-focus';
-            statusText = '';
+            statusIcon = 'ph ph-user-focus';
+            statusText = 'Acompanhado/Auxiliado';
             statusClass = 'status-acompanhado';
         } else if (u.status === 'Não tem interesse') {
-            statusIcon = 'ph-x';
-            statusText = '';
+            statusIcon = 'ph ph-x';
+            statusText = 'Não tem interesse';
             statusClass = 'status-nao-tem-interesse';
         }
 
@@ -820,7 +820,7 @@ function renderRegistered() {
                 </td>
                 <td>
                     <div class="status-cell ${statusClass}">
-                        <i class="ph ${statusIcon}"></i>
+                        <i class="${statusIcon}"></i>
                         <span>${statusText}</span>
                     </div>
                 </td>
