@@ -786,7 +786,7 @@ function renderActions() {
 
     list.innerHTML = ultimasAcoes.map(a => `
         <div class="action-item">
-            <div class="action-avatar"><img src="${avatarHeadUrl(a.nick || a.autor || '')}" /></div>
+            <div class="action-avatar"><img src="${avatarHeadUrl(a.responsavel || a.autor || '')}" /></div>
             <div class="action-info">
                 <span>${formatarLogAcao(a)}</span>
                 <span class="action-time">${formatarData(a.data)}</span>
