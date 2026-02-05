@@ -22,8 +22,7 @@ const PAGE_SIZE = 3;
 const state = { posts: { page: 1, filter: '' }, info: { page: 1, filter: '' }, profile: { page: 1, user: '' } };
 let reprovarNick = '';
 let intervaloAtualizacao = null;
-const INTERVALO_ATUALIZACAO = 1000;
-let ULTIMA_ATUALIZACAO = null;
+const INTERVALO_ATUALIZACAO = 2000;
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -435,7 +434,6 @@ async function carregarDados() {
             const dadosArray = await resposta.json();
             if (dadosArray && dadosArray.length > 0) {
                 DADOS = dadosArray[0].conteudo;
-                ULTIMA_ATUALIZACAO = dadosArray[0].updated_at;
             } else {
                 DADOS = obterDadosIniciais();
                 await salvarDados();
@@ -634,7 +632,6 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
     }
     const statusAnterior = usuario.status;
     usuario.status = novoStatus;
-    
     DADOS.log_acoes.push({
         tipo: "atualizacao_status",
         nick: nick,
@@ -643,25 +640,9 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         responsavel: autor,
         data: new Date().toISOString().replace('T', ' ').slice(0, 19)
     });
-    
-    if (novoStatus === "Acompanhado/Auxiliado") {
-        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === nick.toLowerCase());
-        if (!jaAcompanhado) {
-            DADOS.acompanhamentos.push({
-                executivo: nick,
-                responsavel: autor,
-                status: "ativo"
-            });
-        } else {
-            const acompanhamento = DADOS.acompanhamentos.find(a => a.executivo.toLowerCase() === nick.toLowerCase());
-            if (acompanhamento) {
-                acompanhamento.responsavel = autor;
-            }
-        }
-    } else if (novoStatus === "Não tem interesse" || novoStatus === "Livre") {
+    if (novoStatus === "Não tem interesse") {
         DADOS.acompanhamentos = DADOS.acompanhamentos.filter(a => a.executivo.toLowerCase() !== nick.toLowerCase());
     }
-    
     const sucesso = await salvarDados();
     if (sucesso) {
         showToast(`Status de ${nick} atualizado para: ${novoStatus}`);
@@ -767,7 +748,7 @@ function formatarLogAcao(log) {
         case 'exclusao_executivo':
             return `${log.responsavel} excluiu ${log.nick}`;
         case 'atualizacao_status':
-            return `${log.responsavel} alterou status de ${log.nick} de ${log.status_anterior} para ${log.status_novo}`;
+            return `${log.responsavel} alterou status de ${log.nick}`;
         case 'novo_relatorio':
             return `${log.autor} postou relatório sobre ${log.alvo}`;
         default:
@@ -1631,7 +1612,7 @@ function atualizarPerfilInterface() {
 
 async function verificarAtualizacoesEmTempoReal() {
     try {
-        const resposta = await fetch(`${SUPABASE_URL}/rest/v1/dados_sistema?select=updated_at,conteudo&order=updated_at.desc&limit=1`, {
+        const resposta = await fetch(SUPABASE_URL + '/rest/v1/dados_sistema?select=*', {
             headers: {
                 'apikey': SUPABASE_KEY,
                 'Authorization': 'Bearer ' + SUPABASE_KEY,
@@ -1645,26 +1626,20 @@ async function verificarAtualizacoesEmTempoReal() {
         const dadosArray = await resposta.json();
         if (!dadosArray || dadosArray.length === 0) return;
 
-        const ultimaAtualizacaoRemota = dadosArray[0].updated_at;
         const novosDados = dadosArray[0].conteudo;
+        const dadosAtuaisString = JSON.stringify(DADOS);
+        const novosDadosString = JSON.stringify(novosDados);
 
-        if (!ULTIMA_ATUALIZACAO || ultimaAtualizacaoRemota > ULTIMA_ATUALIZACAO) {
-            ULTIMA_ATUALIZACAO = ultimaAtualizacaoRemota;
+        if (dadosAtuaisString !== novosDadosString) {
+            DADOS = novosDados;
+            atualizarInterfaceAcesso();
             
-            const dadosAtuaisString = JSON.stringify(DADOS);
-            const novosDadosString = JSON.stringify(novosDados);
-
-            if (dadosAtuaisString !== novosDadosString) {
-                DADOS = novosDados;
-                atualizarInterfaceAcesso();
-                
-                if (temAcesso()) {
-                    atualizarTodasInterfaces();
-                    if (!document.getElementById('admin-panel-page').classList.contains('hidden')) {
-                        renderAdminPanel();
-                    }
-                    atualizarNotificacoes();
+            if (temAcesso()) {
+                atualizarTodasInterfaces();
+                if (!document.getElementById('admin-panel-page').classList.contains('hidden')) {
+                    renderAdminPanel();
                 }
+                atualizarNotificacoes();
             }
         }
     } catch (erro) {
