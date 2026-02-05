@@ -89,6 +89,22 @@ async function pegarUsername() {
 function verificarAcesso() {
     const nick = USUARIO_ATUAL.toLowerCase();
 
+    const aindaTemAcesso = 
+        DADOS.acessos.desenvolvedor.includes(nick) ||
+        DADOS.acessos.presidencia.includes(nick) ||
+        DADOS.acessos.diretoria.includes(nick) ||
+        DADOS.acessos.intermediaria.includes(nick);
+
+    if (!aindaTemAcesso) {
+        const solicitacaoIndex = DADOS.solicitacoes.findIndex(s => 
+            s.nick.toLowerCase() === nick && s.status === 'aprovada'
+        );
+        if (solicitacaoIndex > -1) {
+            DADOS.solicitacoes.splice(solicitacaoIndex, 1);
+        }
+        return 'sem_acesso';
+    }
+
     if (DADOS.acessos.desenvolvedor.includes(nick)) {
         return 'desenvolvedor';
     }
@@ -105,22 +121,6 @@ function verificarAcesso() {
     const solicitacao = DADOS.solicitacoes.find(s => s.nick.toLowerCase() === nick);
     if (solicitacao && solicitacao.status === 'reprovada') {
         return 'reprovado';
-    }
-
-    if (solicitacao && solicitacao.status === 'aprovada') {
-        const aindaTemAcesso = 
-            DADOS.acessos.desenvolvedor.includes(nick) ||
-            DADOS.acessos.presidencia.includes(nick) ||
-            DADOS.acessos.diretoria.includes(nick) ||
-            DADOS.acessos.intermediaria.includes(nick);
-            
-        if (!aindaTemAcesso) {
-            const index = DADOS.solicitacoes.findIndex(s => s.nick.toLowerCase() === nick);
-            if (index > -1) {
-                DADOS.solicitacoes.splice(index, 1);
-            }
-            return 'sem_acesso';
-        }
     }
 
     return 'sem_acesso';
@@ -152,6 +152,10 @@ function atualizarInterfaceAcesso() {
 
     identificandoOverlay.classList.add('hidden');
 
+    if (paginaAtual === 'admin' && !temAcesso()) {
+        paginaAtual = 'dashboard';
+    }
+
     if (!temAcesso()) {
         authOverlay.classList.remove('hidden');
         mainContent.classList.add('hidden');
@@ -179,39 +183,10 @@ function atualizarInterfaceAcesso() {
                 authBtn.disabled = true;
                 authBtn.textContent = 'SOLICITAÇÃO PENDENTE';
             }
-        } else if (solicitacao && solicitacao.status === 'aprovada') {
-            const aindaTemAcesso = 
-                DADOS.acessos.desenvolvedor.includes(USUARIO_ATUAL.toLowerCase()) ||
-                DADOS.acessos.presidencia.includes(USUARIO_ATUAL.toLowerCase()) ||
-                DADOS.acessos.diretoria.includes(USUARIO_ATUAL.toLowerCase()) ||
-                DADOS.acessos.intermediaria.includes(USUARIO_ATUAL.toLowerCase());
-            
-            if (!aindaTemAcesso) {
-                messageEl.textContent = 'Você foi removido dos acessos. Solicite o acesso novamente.';
-                messageEl.classList.add('error');
-                messageEl.style.display = 'block';
-                if (authBtn) {
-                    authBtn.disabled = false;
-                    authBtn.textContent = 'SOLICITAR NOVAMENTE';
-                }
-                const index = DADOS.solicitacoes.findIndex(s => s.nick.toLowerCase() === USUARIO_ATUAL.toLowerCase());
-                if (index > -1) {
-                    DADOS.solicitacoes.splice(index, 1);
-                }
-            } else {
-                messageEl.textContent = 'Solicitação aprovada! Redirecionando...';
-                messageEl.classList.add('success');
-                messageEl.style.display = 'block';
-                if (authBtn) {
-                    authBtn.disabled = true;
-                    authBtn.textContent = 'ACESSO APROVADO';
-                }
-                setTimeout(() => {
-                    atualizarInterfaceAcesso();
-                }, 1500);
-            }
         } else {
-            messageEl.style.display = 'none';
+            messageEl.textContent = 'Você não tem acesso ao sistema. Solicite acesso à diretoria.';
+            messageEl.classList.remove('error', 'warning');
+            messageEl.style.display = 'block';
             if (authBtn) {
                 authBtn.disabled = false;
                 authBtn.textContent = 'SOLICITAR ACESSO';
@@ -227,6 +202,14 @@ function atualizarInterfaceAcesso() {
         if (cargo === 'desenvolvedor' || cargo === 'presidencia' || cargo === 'diretoria') {
             menuAdmin.classList.remove('hidden');
             drawerAdmin.classList.remove('hidden');
+        } else {
+            menuAdmin.classList.add('hidden');
+            drawerAdmin.classList.add('hidden');
+
+            if (paginaAtual === 'admin') {
+                switchPage('dashboard');
+                return;
+            }
         }
 
         if (paginaAtual) {
@@ -807,10 +790,23 @@ function renderRegistered() {
     if (!tbody) return;
 
     tbody.innerHTML = DADOS.usuarios.map(u => {
+        let statusIcon = '';
+        let statusText = '';
         let statusClass = '';
-        if (u.status === 'Livre') statusClass = 'status-livre';
-        else if (u.status === 'Acompanhado/Auxiliado') statusClass = 'status-acompanhado';
-        else if (u.status === 'Não tem interesse') statusClass = 'status-nao-tem-interesse';
+        
+        if (u.status === 'Livre') {
+            statusIcon = 'ph ph-coffee';
+            statusText = 'Livre';
+            statusClass = 'status-livre';
+        } else if (u.status === 'Acompanhado/Auxiliado') {
+            statusIcon = 'ph ph-user-focus';
+            statusText = 'Acompanhado/Auxiliado';
+            statusClass = 'status-acompanhado';
+        } else if (u.status === 'Não tem interesse') {
+            statusIcon = 'ph ph-x';
+            statusText = 'Não tem interesse';
+            statusClass = 'status-nao-tem-interesse';
+        }
 
         return `
             <tr>
@@ -820,7 +816,12 @@ function renderRegistered() {
                         <span>${u.nick}</span>
                     </div>
                 </td>
-                <td><span class="${statusClass}">${u.status}</span></td>
+                <td>
+                    <span class="${statusClass}">
+                        <i class="${statusIcon}"></i>
+                        ${statusText}
+                    </span>
+                </td>
                 <td>
                     ${u.responsavel ? `
                         <div class="habbo-cell">
