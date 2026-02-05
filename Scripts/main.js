@@ -804,19 +804,19 @@
                     showReadMore = true;
                 }
                 return `
-        <div class="feed-item">
-            <div class="feed-header-badge">${headerName} - ${formatarData(item.data)}</div>
-            <div class="feed-content-card">
-                <div class="feed-avatar-box">
-                    <img src="${avatarUrl(avatarUser)}" alt="Avatar">
-                </div>
-                <div class="feed-content">
-                    <p>${texto}</p>
-                    ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
-                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
-                </div>
-            </div>
-        </div>`;
+                <div class="feed-item">
+                    <div class="feed-header-badge">${headerName} - ${formatarData(item.data)}</div>
+                    <div class="feed-content-card">
+                        <div class="feed-avatar-box">
+                            <img src="${avatarUrl(avatarUser)}" alt="Avatar">
+                        </div>
+                        <div class="feed-content">
+                            <p>${texto}</p>
+                            ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
+                            ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank" rel="noopener noreferrer">Clique aqui</a></p>` : ``}
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
@@ -907,19 +907,19 @@
                     showReadMore = true;
                 }
                 return `
-        <div class="feed-item">
-            <div class="feed-header-badge">${target} - ${formatarData(item.data)}</div>
-            <div class="feed-content-card">
-                <div class="feed-avatar-box">
-                    <img src="${avatarUrl(target)}" alt="Avatar">
-                </div>
-                <div class="feed-content">
-                    <p>${texto}</p>
-                    ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
-                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
-                </div>
-            </div>
-        </div>`;
+                <div class="feed-item">
+                    <div class="feed-header-badge">${target} - ${formatarData(item.data)}</div>
+                    <div class="feed-content-card">
+                        <div class="feed-avatar-box">
+                            <img src="${avatarUrl(target)}" alt="Avatar">
+                        </div>
+                        <div class="feed-content">
+                            <p>${texto}</p>
+                            ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
+                            ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank" rel="noopener noreferrer">Clique aqui</a></p>` : ``}
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
