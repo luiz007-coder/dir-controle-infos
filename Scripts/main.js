@@ -1567,7 +1567,7 @@ function openModal(type) {
     } else if (type === 'manage-roles') {
         const cargo = verificarAcesso();
         if (cargo !== 'desenvolvedor' && cargo !== 'presidencia') {
-            showToast('Apenas a Presidência gerenciar cargos!', 'error');
+            showToast('Apenas a Presidência pode gerenciar cargos!', 'error');
             return;
         }
 
