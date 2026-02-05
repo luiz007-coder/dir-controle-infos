@@ -626,41 +626,46 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
         
         DADOS.estatisticas.total_usuarios = DADOS.usuarios.length;
         DADOS.estatisticas.usuarios_hoje += 1;
+
+        DADOS.acompanhamentos.push({
+            executivo: alvo,
+            responsavel: autor,
+            status: "ativo"
+        });
         
-        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
-        if (!jaAcompanhado) {
-            DADOS.acompanhamentos.push({
-                executivo: alvo,
-                responsavel: autor,
-                status: "ativo"
-            });
-        }
+        showToast(`Executivo ${alvo} registrado automaticamente com status Acompanhado/Auxiliado!`, 'success');
     } else {
         const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
         
-        if (!jaAcompanhado) {
+        if (!jaAcompanhado && (usuarioExistente.status === "Livre" || usuarioExistente.status === "Não tem interesse")) {
             DADOS.acompanhamentos.push({
                 executivo: alvo,
                 responsavel: autor,
                 status: "ativo"
             });
             
+            const statusAnterior = usuarioExistente.status;
             usuarioExistente.status = "Acompanhado/Auxiliado";
             
             DADOS.log_acoes.push({
                 tipo: "atualizacao_status",
                 nick: alvo,
-                status_anterior: "Livre",
+                status_anterior: statusAnterior,
                 status_novo: "Acompanhado/Auxiliado",
                 responsavel: autor,
                 data: new Date().toISOString().replace('T', ' ').slice(0, 19)
             });
+            
+            showToast(`Status de ${alvo} atualizado para Acompanhado/Auxiliado!`, 'success');
         }
     }
     
     const sucesso = await salvarDados();
     if (sucesso) {
         showToast(`Relatório postado com sucesso!`);
+
+        atualizarTodasInterfaces();
+        
         return true;
     }
     return false;
@@ -711,7 +716,7 @@ function atualizarTodasInterfaces() {
     renderActions();
     renderRanking();
     renderStatistics();
-    
+
     ['posts', 'info'].forEach(mode => {
         renderFeed(mode);
         renderPagination(mode);
