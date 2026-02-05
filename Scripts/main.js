@@ -81,7 +81,7 @@
             } catch (err) {
                 console.error('Erro ao pegar username:', err);
             }
-            return 'Sliker244';
+            return null;
         }
 
         function verificarAcesso() {
@@ -1687,3 +1687,4 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => { init(); });
+
