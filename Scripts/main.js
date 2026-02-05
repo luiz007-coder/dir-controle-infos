@@ -81,7 +81,7 @@
             } catch (err) {
                 console.error('Erro ao pegar username:', err);
             }
-            return 'LBMaju';
+            return '-Anderson....';
         }
 
         function verificarAcesso() {
@@ -265,8 +265,16 @@
             const sucesso = await salvarDados();
             if (sucesso) {
                 showToast('Solicitação enviada com sucesso!');
-                atualizarInterfaceAcesso();
+
                 atualizarNotificacoes();
+
+                const cargo = verificarAcesso();
+                if ((cargo === 'desenvolvedor' || cargo === 'presidencia' || cargo === 'diretoria') && 
+                    !document.getElementById('admin-panel-page').classList.contains('hidden')) {
+                    renderAdminPanel();
+                }
+                
+                atualizarInterfaceAcesso();
                 return true;
             }
             return false;
@@ -288,8 +296,14 @@
             const sucesso = await salvarDados();
             if (sucesso) {
                 showToast(`Solicitação ${acao} com sucesso!`);
+
                 renderAdminPanel();
                 atualizarNotificacoes();
+
+                if (nick.toLowerCase() === USUARIO_ATUAL.toLowerCase() && acao === 'aprovada') {
+                    atualizarInterfaceAcesso();
+                }
+                
                 return true;
             }
             return false;
@@ -345,10 +359,14 @@
                 const sucesso = await salvarDados();
                 if (sucesso) {
                     showToast(`Cargo ${cargo} ${acao === 'adicionar' ? 'adicionado' : 'removido'} para ${nick}`);
+
                     renderAdminPanel();
+                    
                     if (nick.toLowerCase() === USUARIO_ATUAL.toLowerCase()) {
                         atualizarInterfaceAcesso();
+                        atualizarPerfilInterface();
                     }
+                    
                     return true;
                 }
             }
@@ -532,6 +550,7 @@
                 print: print_url || "",
                 data: new Date().toISOString().replace('T', ' ').slice(0, 19)
             });
+            
             DADOS.log_acoes.push({
                 tipo: "novo_relatorio",
                 autor: autor,
@@ -539,7 +558,9 @@
                 responsavel: autor,
                 data: new Date().toISOString().replace('T', ' ').slice(0, 19)
             });
+            
             DADOS.estatisticas.total_relatorios = DADOS.relatorios.length;
+            
             const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
             if (!jaAcompanhado) {
                 DADOS.acompanhamentos.push({
@@ -548,10 +569,16 @@
                     status: "ativo"
                 });
             }
+            
             const sucesso = await salvarDados();
             if (sucesso) {
                 showToast(`Relatório postado com sucesso!`);
                 atualizarTodasInterfaces();
+
+                if (!document.getElementById('admin-panel-page').classList.contains('hidden')) {
+                    renderAdminPanel();
+                }
+                
                 return true;
             }
             return false;
@@ -589,16 +616,24 @@
             renderActions();
             renderRanking();
             renderStatistics();
+            
             ['posts', 'info'].forEach(mode => {
                 renderFeed(mode);
                 renderPagination(mode);
                 renderProfile(mode);
             });
+            
             if (state.profile.user) {
                 renderProfileSidebar();
                 renderProfileFeed();
                 renderProfilePagination();
             }
+
+            if (!document.getElementById('admin-panel-page').classList.contains('hidden')) {
+                renderAdminPanel();
+            }
+
+            atualizarNotificacoes();
         }
         function renderRegistered() {
             const tbody = document.getElementById('registered-body');
@@ -1687,4 +1722,3 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => { init(); });
-
