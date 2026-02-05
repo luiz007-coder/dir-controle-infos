@@ -608,7 +608,6 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
     DADOS.estatisticas.total_relatorios = DADOS.relatorios.length;
     
     const usuarioExistente = DADOS.usuarios.find(u => u.nick.toLowerCase() === alvo.toLowerCase());
-    const alvoLower = alvo.toLowerCase();
     
     if (!usuarioExistente) {
         DADOS.usuarios.push({
@@ -627,40 +626,34 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
         
         DADOS.estatisticas.total_usuarios = DADOS.usuarios.length;
         DADOS.estatisticas.usuarios_hoje += 1;
-
-        DADOS.acompanhamentos.push({
-            executivo: alvo,
-            responsavel: autor,
-            status: "ativo"
-        });
         
-        showToast(`Executivo ${alvo} registrado automaticamente com status Acompanhado/Auxiliado!`, 'success');
+        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
+        if (!jaAcompanhado) {
+            DADOS.acompanhamentos.push({
+                executivo: alvo,
+                responsavel: autor,
+                status: "ativo"
+            });
+        }
     } else {
-        const statusAtual = usuarioExistente.status;
-        const precisaAtualizarStatus = (statusAtual === "Livre" || statusAtual === "Não tem interesse");
-
-        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvoLower);
+        const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === alvo.toLowerCase());
         
-        if (precisaAtualizarStatus) {
+        if (!jaAcompanhado) {
+            DADOS.acompanhamentos.push({
+                executivo: alvo,
+                responsavel: autor,
+                status: "ativo"
+            });
+            
             usuarioExistente.status = "Acompanhado/Auxiliado";
             
             DADOS.log_acoes.push({
                 tipo: "atualizacao_status",
                 nick: alvo,
-                status_anterior: statusAtual,
+                status_anterior: "Livre",
                 status_novo: "Acompanhado/Auxiliado",
                 responsavel: autor,
                 data: new Date().toISOString().replace('T', ' ').slice(0, 19)
-            });
-            
-            showToast(`Status de ${alvo} atualizado de ${statusAtual} para Acompanhado/Auxiliado!`, 'success');
-        }
-
-        if (!jaAcompanhado && (statusAtual === "Livre" || usuarioExistente.status === "Acompanhado/Auxiliado")) {
-            DADOS.acompanhamentos.push({
-                executivo: alvo,
-                responsavel: autor,
-                status: "ativo"
             });
         }
     }
@@ -668,9 +661,6 @@ async function postarRelatorio(autor, alvo, texto, print_url) {
     const sucesso = await salvarDados();
     if (sucesso) {
         showToast(`Relatório postado com sucesso!`);
-
-        atualizarTodasInterfaces();
-        
         return true;
     }
     return false;
@@ -682,7 +672,6 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         showToast(`Executivo ${nick} não encontrado!`, 'error');
         return false;
     }
-    
     const statusAnterior = usuario.status;
     usuario.status = novoStatus;
     
@@ -694,11 +683,10 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
         responsavel: autor,
         data: new Date().toISOString().replace('T', ' ').slice(0, 19)
     });
+    
     if (novoStatus === "Não tem interesse" || novoStatus === "Livre") {
         DADOS.acompanhamentos = DADOS.acompanhamentos.filter(a => a.executivo.toLowerCase() !== nick.toLowerCase());
-        showToast(`${nick} removido da lista de acompanhamentos.`, 'warning');
-    } 
-    else if (novoStatus === "Acompanhado/Auxiliado") {
+    } else if (novoStatus === "Acompanhado/Auxiliado") {
         const jaAcompanhado = DADOS.acompanhamentos.some(a => a.executivo.toLowerCase() === nick.toLowerCase());
         if (!jaAcompanhado) {
             DADOS.acompanhamentos.push({
@@ -706,16 +694,12 @@ async function atualizarStatusExecutivo(nick, novoStatus, autor) {
                 responsavel: autor,
                 status: "ativo"
             });
-            showToast(`${nick} adicionado à lista de acompanhamentos.`, 'success');
         }
     }
     
     const sucesso = await salvarDados();
     if (sucesso) {
         showToast(`Status de ${nick} atualizado para: ${novoStatus}`);
-
-        atualizarTodasInterfaces();
-        
         return true;
     }
     return false;
@@ -727,7 +711,7 @@ function atualizarTodasInterfaces() {
     renderActions();
     renderRanking();
     renderStatistics();
-
+    
     ['posts', 'info'].forEach(mode => {
         renderFeed(mode);
         renderPagination(mode);
