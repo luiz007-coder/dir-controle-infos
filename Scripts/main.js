@@ -813,7 +813,7 @@
                 <div class="feed-content">
                     <p>${texto}</p>
                     ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
-                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">${item.print}</a></p>` : ``}
+                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
                 </div>
             </div>
         </div>`;
@@ -916,7 +916,7 @@
                 <div class="feed-content">
                     <p>${texto}</p>
                     ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
-                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">${item.print}</a></p>` : ``}
+                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
                 </div>
             </div>
         </div>`;
