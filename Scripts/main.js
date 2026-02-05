@@ -763,25 +763,38 @@
 
         function isSearching(mode) { return state[mode].filter.trim().length > 0; }
 
-        function renderProfile(mode) {
-            const filtered = getFilteredData(mode);
-            const countEl = document.getElementById(`profile-info-count-${mode}`);
-            const avatarEl = document.getElementById(`profile-avatar-${mode}`);
-            const placeholderEl = document.getElementById(`profile-placeholder-${mode}`);
-            const feedListEl = document.getElementById(`feed-list-${mode}`);
-
-            if (!isSearching(mode) || filtered.length === 0) {
-                countEl.textContent = `Nenhuma informação encontrada.`;
-                avatarEl.classList.add('hidden');
-                placeholderEl.style.display = 'flex';
-                if (feedListEl) feedListEl.innerHTML = '<div style="color:#888;text-align:center;padding:32px 0;">Nenhuma informação encontrada.</div>';
-            } else {
-                countEl.textContent = `${filtered.length} informação(ões) disponível(eis)`;
-                const userForAvatar = state[mode].filter || (mode === 'posts' ? filtered[0].autor : filtered[0].alvo);
-                avatarEl.src = avatarUrl(userForAvatar);
-                avatarEl.classList.remove('hidden');
-                placeholderEl.style.display = 'none';
-            }
+        function renderProfileFeed() {
+            const listEl = document.getElementById('feed-list-profile');
+            const data = getProfileData();
+            if (!state.profile.user || data.length === 0) { listEl.innerHTML = ''; return; }
+            const page = state.profile.page;
+            const start = (page - 1) * PAGE_SIZE;
+            const items = data.slice(start, start + PAGE_SIZE);
+            const user = state.profile.user;
+            listEl.innerHTML = items.map(item => {
+                const target = item.alvo;
+                const MAX_CHARS = 350;
+                let texto = item.texto;
+                let showReadMore = false;
+                if (texto.length > MAX_CHARS) {
+                    texto = texto.slice(0, MAX_CHARS) + '...';
+                    showReadMore = true;
+                }
+                return `
+                <div class="feed-item">
+                    <div class="feed-header-badge">${target} - ${formatarData(item.data)}</div>
+                    <div class="feed-content-card">
+                        <div class="feed-avatar-box">
+                            <img src="${avatarUrl(target)}" alt="Avatar">
+                        </div>
+                        <div class="feed-content">
+                            <p>${texto}</p>
+                            ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
+                            ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         function renderFeed(mode) {
@@ -804,19 +817,19 @@
                     showReadMore = true;
                 }
                 return `
-        <div class="feed-item">
-            <div class="feed-header-badge">${headerName} - ${formatarData(item.data)}</div>
-            <div class="feed-content-card">
-                <div class="feed-avatar-box">
-                    <img src="${avatarUrl(avatarUser)}" alt="Avatar">
-                </div>
-                <div class="feed-content">
-                    <p>${texto}</p>
-                    ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
-                    ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">${item.print}</a></p>` : ``}
-                </div>
-            </div>
-        </div>`;
+                <div class="feed-item">
+                    <div class="feed-header-badge">${headerName} - ${formatarData(item.data)}</div>
+                    <div class="feed-content-card">
+                        <div class="feed-avatar-box">
+                            <img src="${avatarUrl(avatarUser)}" alt="Avatar">
+                        </div>
+                        <div class="feed-content">
+                            <p>${texto}</p>
+                            ${showReadMore ? `<button class='ler-mais-btn' onclick='this.previousElementSibling.textContent = ${JSON.stringify(item.texto)}; this.style.display = "none";'>Ler mais</button>` : ''}
+                            ${item.print ? `<p>Print: <a href="${item.print}" style="color:#7CFF9B;" target="_blank">Clique aqui</a></p>` : ``}
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
@@ -1687,6 +1700,3 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => { init(); });
-
-
-
