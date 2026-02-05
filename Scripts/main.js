@@ -827,7 +827,7 @@ function renderRegistered() {
                             <img src="${avatarHeadUrl(u.responsavel)}" />
                             <span>${u.responsavel}</span>
                         </div>
-                    ` : '<span style="color:#888; font-style:italic;">Sem responsável</span>'}
+                    ` : '<span style="color:#888; font-style:italic;">-x-</span>'}
                 </td>
             </tr>
         `}).join('');
