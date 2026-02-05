@@ -793,20 +793,20 @@ function renderRegistered() {
 
     tbody.innerHTML = DADOS.usuarios.map(u => {
         let statusIcon = '';
-        let statusText = '';
+        let statusTooltip = '';
         let statusClass = '';
         
         if (u.status === 'Livre') {
             statusIcon = 'ph ph-coffee';
-            statusText = 'Livre';
+            statusTooltip = 'Livre';
             statusClass = 'status-livre';
         } else if (u.status === 'Acompanhado/Auxiliado') {
             statusIcon = 'ph ph-user-focus';
-            statusText = 'Acompanhado/Auxiliado';
+            statusTooltip = 'Acompanhado/Auxiliado';
             statusClass = 'status-acompanhado';
         } else if (u.status === 'Não tem interesse') {
             statusIcon = 'ph ph-x';
-            statusText = 'Não tem interesse';
+            statusTooltip = 'Não tem interesse';
             statusClass = 'status-nao-tem-interesse';
         }
 
@@ -819,9 +819,8 @@ function renderRegistered() {
                     </div>
                 </td>
                 <td>
-                    <div class="status-cell ${statusClass}">
+                    <div class="status-cell ${statusClass}" title="${statusTooltip}">
                         <i class="${statusIcon}"></i>
-                        <span>${statusText}</span>
                     </div>
                 </td>
                 <td>
