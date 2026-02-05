@@ -81,7 +81,7 @@
             } catch (err) {
                 console.error('Erro ao pegar username:', err);
             }
-            return ',youiz';
+            return 'Sliker244';
         }
 
         function verificarAcesso() {
@@ -1685,4 +1685,5 @@
             document.getElementById('reprovar-cancelar').addEventListener('click', fecharModalReprovar);
             document.getElementById('reprovar-confirmar').addEventListener('click', confirmarReprovar);
         }
+
         document.addEventListener('DOMContentLoaded', () => { init(); });
