@@ -1,5 +1,5 @@
-        const SUPABASE_URL = 'https://ztbnthhangadfonqrmyk.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_DSJYBbzFPxgckls6vaFxVQ_iGo_CAmu';
+        const SUPABASE_URL = 'https://lapebtogfpkfwnkzxvvd.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_fc6qjEfzs124EjpwGBe-xg_1JUDDviV';
 
         let DADOS = {
             usuarios: [],
@@ -2138,3 +2138,4 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => { init(); });
+
