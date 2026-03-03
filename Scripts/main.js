@@ -1,5 +1,5 @@
         const SUPABASE_URL = 'https://lapebtogfpkfwnkzxvvd.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_fc6qjEfzs124EjpwGBe-xg_1JUDDviV';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhcGVidG9nZnBrZndua3p4dnZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDEzNTMsImV4cCI6MjA4ODA3NzM1M30.Kx-2lisfEOEAdZesTTO0kT8qFNbd1DWmPAIRCDr8448';
 
         let DADOS = {
             usuarios: [],
@@ -2138,4 +2138,5 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => { init(); });
+
 
